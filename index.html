@@ -88,7 +88,7 @@
            .attr("fill", d => colorScale(d.value) )
            .attr("d", d3.geoPath())  
 
-        ffmap.append("path").datum(statesMesh)
+        co2_map.append("path").datum(statesMesh)
         .attr("class","outline")
         .attr("opacity", 0.5)
         .attr("d", path);
