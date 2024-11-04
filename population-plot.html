@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Population plot placeholder</title>
+</head>
+<body>
+    <svg width="1000" height="1000" id="chart"></svg>
+    <script>
+        const svg = d3.select("svg");
+        const width = svg.attr("width");
+        const height = svg.attr("height");
+        const margin = {top: 10, right: 100, bottom: 50, left: 100};
+        const chartWidth = width - margin.left - margin.right;
+        const chartHeight = height - margin.top - margin.bottom;
+
+        let annotations = svg.append("g").attr("id","annotations");
+        let chartArea = svg.append("g").attr("id","points")
+                           .attr("transform",`translate(${margin.left},${margin.top})`);
+
+        d3.csv("world_population.csv")
+          .then((data) => {
+            console.log(data);
+
+            //Define scales
+            let populationExtent = d3.extent(data, d => d['1970']); //Y-axis. '1970' is a placeholder and can be controlled with a variable.
+            let populationScale = d3.scaleLinear()
+                                    .domain(populationExtent)
+                                    .range([chartHeight, 0]);
+
+            const countries = d3.map(data, d => d['Country/Territory']); //X-axis
+            const countryScale = d3.scaleBand() 
+                                .domain(countries)
+                                .range([0,chartWidth])
+                                .padding(0.05);
+
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10); //Color scale
+
+            //Create axes and gridlines
+            let leftAxis = d3.axisLeft(populationScale);
+            let leftGridlines = d3.axisLeft(populationScale).tickSize(-chartWidth-10).tickFormat("");
+            annotations.append("g")
+                       .attr("class", "y axis")
+                       .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                       .call(leftAxis)
+            annotations.append("g")
+                       .attr("class", "y gridlines")
+                       .attr("transform",`translate(${margin.left-10},${margin.top})`)
+                       .call(leftGridlines);
+
+            let bottomAxis = d3.axisBottom(countryScale)
+            let bottomGridlines = d3.axisBottom(countryScale)
+                                    .tickSize(-chartHeight-10)
+                                    .tickFormat("")
+            annotations.append("g")
+                       .attr("class", "x axis")
+                       .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                       .call(bottomAxis);
+            annotations.append("g")
+                       .attr("class", "x gridlines")
+                       .attr("transform",`translate(${margin.left},${chartHeight+margin.top+10})`)
+                       .call(bottomGridlines);
+
+            //Plot the rectangles. This is where we will make the changes for narrowing down to a single country for the user.
+            chartArea.selectAll('rect.bar').data( data )
+                    .join('rect').attr('class','bar')
+                    .attr("fill", d => colorScale(d['Country/Territory']))
+                    .attr("x", d => countryScale(d['Country/Territory']))
+                    .attr("y", d => populationScale(d['1970']))
+                    .attr("height", d => populationScale(0) - populationScale(d['1970']))
+                    .attr("width", countryScale.bandwidth());
+        })
+    </script>
+</body>
+</html>
