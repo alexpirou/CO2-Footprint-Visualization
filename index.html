@@ -4,102 +4,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Population vs C02 emissions analysis</title>
+  <title>World CO₂ Emissions Analysis</title>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
-        <script>
-
-        var topology = topojson.topology({foo: geojson});
-
-        </script>
-        
   <style>
-    .gridlines line {
-      stroke: #bbb;
+    .country {
+      fill: #ccc;
+      stroke: #333;
     }
 
-    .gridlines .domain {
-      stroke: none;
+    .contours {
+      opacity: 0.7;
+    }
+
+    .outline {
+      fill: none;
+      stroke: #000;
     }
   </style>
 </head>
 
 <body>
+  <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"> </svg>
 
-  <svg id="co2" height="610" width="975" style="background: #fff; margin-top:50px"> </svg>
+  <script>
+    // Select the SVG and define width and height
+    const co2_svg = d3.select("#co2");
+    const co2_width = co2_svg.attr("width");
+    const co2_height = co2_svg.attr("height");
+    const co2_map = co2_svg.append("g");
 
-  <div>
+    // Function to load data and render the map
+    async function requestDataFF() {
+      // Load TopoJSON and CO₂ emissions data
+      const world = await d3.json("./countries-110m.json");
+      const co2_emissions = await d3.csv("./co2_emissions_kt_by_country.csv", d3.autoType);
 
-    <script>
+      // Use Mercator projection for a global map view
+      const projection = d3.geoMercator()
+                           .scale(200)
+                           .translate([co2_width / 2, co2_height / 1.4]);
 
-        // Carbon Emissions map
-        const co2_svg = d3.select("#co2");
-        const co2_width = co2_svg.attr("width");
-        const co2_height = co2_svg.attr("height");
-        const co2_mapWidth = co2_width;
-        const co2_mapHeight = co2_height;
-        // No margins here since our US map already has a specific projection to match to size
-        const co2_map = co2_svg.append("g");
-        
-         // 2. Make a contour map
-    
-        const requestDataFF = async function() {
-      
-        const us = await d3.json("../datasets/counties-10m.json");
-        var projection = d3.geoAlbersUsa().scale(1300).translate([487.5, 305]);
-        var path = d3.geoPath().projection(projection);
-        var nation = topojson.feature(us, us.objects.nation);
-        var statesMesh = topojson.mesh(us, us.objects.states);
-        
-        // Draw nation and state outlines
-        co2_map.selectAll("path.nation").data(nation.features)
-            .join("path")
-            .attr("class", "nation")
-            .attr("d", path);
-        co2_map.append("path").datum(statesMesh)
-                .attr("class","outline")
-                .attr("d", path);
-        
+      const path = d3.geoPath().projection(projection);
 
-        var co2_emissions = await d3.csv("../datasets/co2_emissions_kt_by_country.csv", d3.autoType);
-        console.log(co2_emissions)
+      // Convert TopoJSON to GeoJSON for rendering each country
+      const countries = topojson.feature(world, world.objects.countries).features;
 
-        co2_emissions.forEach( (d, i) => {
-        // Use the projection just like a scale to convert from lng/lat to pixels
-        d.position = projection( [d.longitude, d.latitude] );
-        });
-      
-        let contourGen = d3.contourDensity()
-                         .x( d => d.position[0] )        // point x position (best in pixels)
-                         .y( d => d.position[1] )        // point y position (best in pixels)
-                         .size( [co2_width, co2_height] )    // size of canvas
-                         .thresholds( 10 );    
-
-        let contours = contourGen(co2_emissions);
-        console.log(contours)
-
-        let valueExtent = d3.extent(contours, d => d.value);
-        let colorScale = d3.scaleSequential(d3.interpolateViridis).domain(valueExtent)
-      
-        let layer = co2_map.append("g");
-      
-        layer.selectAll("path.contours")
-           .data(contours)
-           .join("path")
-           .attr("class", 'contours')
-           .attr("fill", d => colorScale(d.value) )
-           .attr("d", d3.geoPath())  
-
-        co2_map.append("path").datum(statesMesh)
-        .attr("class","outline")
-        .attr("opacity", 0.5)
+      // Draw the countries with a default fill color
+      co2_map.selectAll("path.country")
+        .data(countries)
+        .join("path")
+        .attr("class", "country")
         .attr("d", path);
-
-        }
-
-    </script>
-  </div>
-
+    }
+    
+    // Run the function to load and display the data
+    requestDataFF().catch(error => console.error("Error loading data:", error));
+  </script>
 </body>
 
 </html>
