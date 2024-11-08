@@ -21,7 +21,7 @@
 
 <body>
   <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
-<svg id="population-chart" height="500" width="1200" style="background: #fff; margin-top: 50px"></svg>
+  <svg id="population-chart" height="500" width="1200" style="background: #fff; margin-top: 50px"></svg>
 
 <script>
   async function requestData() {
@@ -30,130 +30,134 @@
     const co2_emissions = await d3.csv("./co2_emissions_kt_by_country.csv", d3.autoType);
     const population_data = await d3.csv("world_population.csv", d3.autoType);
   
-    //CO2 Map
+    //CO2 Map basic setup
     const co2_svg = d3.select("#co2");
     const co2_width = co2_svg.attr("width");
     const co2_height = co2_svg.attr("height");
     const co2_map = co2_svg.append("g");
 
-    // Set projection and path for the map
+    //Set projection and path for the map
     const projection = d3.geoMercator()
-                        .scale(200)
-                        .translate([co2_width / 2, co2_height / 1.4]);
+                         .scale(200)
+                         .translate([co2_width / 2, co2_height / 1.4]);
 
     const path = d3.geoPath().projection(projection);
 
-    // Convert TopoJSON to GeoJSON for countries
+    //Convert TopoJSON to GeoJSON for countries
     const countries = topojson.feature(world, world.objects.countries).features;
 
-    // Population Bar Chart
-    const populationYear = "2022 Population";
+    //Population Bar Chart
+    let populationYear = "2022 Population"; //This date will be changed with the time slider
+
     population_data.forEach(d => {
       d[populationYear] = Number(d[populationYear]);
     });
 
     const topCountries = population_data.sort((a, b) => b[populationYear] - a[populationYear])
-                                        .slice(0, 10);
+                                        .slice(0, 10); //Select the top 10 countries
 
     //Create a mapping from country names to colors based on population data
     const colorScale = d3.scaleOrdinal(d3.schemeTableau10)
-                         .domain(topCountries.map(d => d['Country/Territory']));  // Use country names as domain
+                         .domain(topCountries.map(d => d['Country/Territory']));
 
-    //Create a mapping for easier access to population data by country name
-    const populationMap = new Map(topCountries.map(d => [d['Country/Territory'], d[populationYear]]));
+    //Used to lookup population data by country name
+    const populationLookup = {};
+    topCountries.forEach(d => {
+      populationLookup[d['Country/Territory']] = d[populationYear]; //Key equals the country and value equals the population value associated with the population year
+    });
 
     //Draw countries on the map with colors based on population (same scale as bar chart)
     co2_map.selectAll("path.country")
-      .data(countries)
-      .join("path")
-      .attr("class", "country")
-      .attr("d", path)
-      .attr("fill", d => {
-        const countryName = d.properties.name; //Fill country with corresponding color via the color scale
-        const population = populationMap.get(countryName);
-        if (population) {
-        return colorScale(countryName);  //Use color from the color scale if population exists
-        } else {
-        return "#d3d3d3";  //Default gray color if no population data
-        } 
-      })
-      .attr("stroke", "black")
-      .attr("stroke-width", 0.5);
+           .data(countries)
+           .join("path")
+           .attr("class", "country")
+           .attr("d", path)
+           .attr("fill", d => {
+           const countryName = d.properties.name; //Country name from the map's (topjson) data
+           const population = populationLookup[countryName]; //Lookup population directly and get the value
+           if (population) {
+            return colorScale(population);
+          } else {
+            return "#d3d3d3";  //Default gray color if no population data
+          }
+          })
+          .attr("stroke", "black")
+          .attr("stroke-width", 0.5);
 
-  // Population Bar Chart
-  const chart_svg = d3.select("#population-chart");
-  const chart_width = chart_svg.attr("width");
-  const chart_height = chart_svg.attr("height");
-  const chartArea = chart_svg.append("g")
-                            .attr("transform", "translate(50, 50)");
+    //Population Bar Chart
+    const chart_svg = d3.select("#population-chart");
+    const chart_width = chart_svg.attr("width");
+    const chart_height = chart_svg.attr("height");
+    const chartArea = chart_svg.append("g")
+                               .attr("transform", "translate(50, 50)");
 
-  // Define scales for the population bar chart
-  const populationScale = d3.scaleLinear()
-                            .domain([0, d3.max(topCountries, d => d[populationYear])])
-                            .range([0, chart_width - 100]);
+    //Define scales for the population bar chart
+    const populationScale = d3.scaleLinear()
+                              .domain([0, d3.max(topCountries, d => d[populationYear])])
+                              .range([0, chart_width - 100]);
 
-  const countryScale = d3.scaleBand()
-                         .domain(topCountries.map(d => d['Country/Territory']))
-                         .range([0, chart_height - 100])  // Adjust based on number of countries
-                         .padding(0.5);
+    const countryScale = d3.scaleBand()
+                           .domain(topCountries.map(d => d['Country/Territory']))
+                           .range([0, chart_height - 100])
+                           .padding(0.5);
+ 
+    //Create axes and gridlines for the bar chart
+    const leftAxis = d3.axisLeft(countryScale);
+    const leftGridlines = d3.axisLeft(countryScale)
+                            .tickSize(-chart_width + 100)
+                            .tickFormat("");
+    chartArea.append("g")
+             .attr("class", "y axis")
+             .call(leftAxis);
 
-  // Create axes and gridlines for the bar chart
-  const leftAxis = d3.axisLeft(countryScale);
-  const leftGridlines = d3.axisLeft(countryScale)
-                         .tickSize(-chart_width + 100)
-                         .tickFormat("");
-  chartArea.append("g")
-           .attr("class", "y axis")
-           .call(leftAxis);
+    chartArea.append("g")
+             .attr("class", "y gridlines")
+             .call(leftGridlines);
 
-  chartArea.append("g")
-           .attr("class", "y gridlines")
-           .call(leftGridlines);
+    const bottomAxis = d3.axisBottom(populationScale).tickFormat(d3.format(".2s"));
+    const bottomGridlines = d3.axisBottom(populationScale)
+                              .tickSize(-chart_height + 100)
+                              .tickFormat("");
+    chartArea.append("g")
+             .attr("class", "x axis")
+             .attr("transform", `translate(0, ${chart_height - 50})`)
+             .call(bottomAxis);
 
-  const bottomAxis = d3.axisBottom(populationScale).tickFormat(d3.format(".2s"));
-  const bottomGridlines = d3.axisBottom(populationScale)
-                           .tickSize(-chart_height + 100)
-                           .tickFormat("");
-  chartArea.append("g")
-           .attr("class", "x axis")
-           .attr("transform", `translate(0, ${chart_height - 50})`)
-           .call(bottomAxis);
+    chartArea.append("g")
+             .attr("class", "x gridlines")
+             .attr("transform", `translate(0, ${chart_height - 50})`)
+             .call(bottomGridlines);
 
-  chartArea.append("g")
-           .attr("class", "x gridlines")
-           .attr("transform", `translate(0, ${chart_height - 50})`)
-           .call(bottomGridlines);
+    //Add title to the population chart
+    chartArea.append("text")
+             .attr("x", (chart_width - 100) / 2)
+             .attr("y", -30)
+             .attr("text-anchor", "middle")
+             .attr("font-size", "20px")
+             .text(populationYear);
 
-  // Add title to the population chart
-  chartArea.append("text")
-           .attr("x", (chart_width - 100) / 2)
-           .attr("y", -30)
-           .attr("text-anchor", "middle")
-           .attr("font-size", "20px")
-           .text(populationYear);
+    //Plot the bars for the population chart
+    chartArea.selectAll('rect.bar')
+             .data(topCountries)
+             .join('rect')
+             .attr('class', 'bar')
+             .attr("x", 0)
+             .attr("y", d => countryScale(d['Country/Territory']))
+             .attr("fill", d => colorScale(d['Country/Territory']))
+             .attr("width", d => Math.min(populationScale(d[populationYear]), chart_width - 100))
+             .attr("height", countryScale.bandwidth());
 
-  // Plot the bars for the population chart
-  chartArea.selectAll('rect.bar')
-           .data(topCountries)
-           .join('rect')
-           .attr('class', 'bar')
-           .attr("x", 0)
-           .attr("y", d => countryScale(d['Country/Territory']))
-           .attr("fill", d => colorScale(d['Country/Territory']))  // Use the same color scale for the bars
-           .attr("width", d => Math.min(populationScale(d[populationYear]), chart_width - 100))
-           .attr("height", countryScale.bandwidth());
-
-  // Add population text inside each bar
-  chartArea.selectAll('text.population')
-           .data(topCountries)
-           .join('text')
-           .attr('class', 'population')
-           .attr("x", d => populationScale(d[populationYear]) - 70)
-           .attr("y", d => countryScale(d['Country/Territory']) + countryScale.bandwidth() / 2 + 5)
-           .attr("fill", "black")
-           .attr("font-size", "12px")
-           .attr("text-anchor", "start")
-           .text(d => d3.format(",")(d[populationYear]));
+    //Add population text inside each bar
+    chartArea.selectAll('text.population')
+             .data(topCountries)
+             .join('text')
+             .attr('class', 'population')
+             .attr("x", d => populationScale(d[populationYear]) - 70)
+             .attr("y", d => countryScale(d['Country/Territory']) + countryScale.bandwidth() / 2 + 5)
+             .attr("fill", "black")
+             .attr("font-size", "12px")
+             .attr("text-anchor", "start")
+             .text(d => d3.format(",")(d[populationYear]));
 }
 
 requestData();
