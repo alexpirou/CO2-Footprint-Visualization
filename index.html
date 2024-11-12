@@ -7,6 +7,9 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://unpkg.com/topojson@3"></script>
   <style>
+    body {
+      font-family:Arial, Helvetica, sans-serif;
+    }
     .gridlines line {
       stroke: #bbb;
     }
@@ -28,6 +31,7 @@
   </style>
 </head>
 <body>
+  <h1>Population & CO₂ Footprint Visualizer 1970-2010</h1>
   <div id="tooltip" class="tooltip"></div>
   <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
   <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
@@ -185,6 +189,34 @@
              .attr("fill", "none")
              .attr("stroke", "#333")
              .attr("stroke-width", 0.7);
+
+             const legendWidth = 300, legendHeight = 10;
+      const legend = co2_svg.append("g")
+                            .attr("transform", `translate(${(co2_width - legendWidth) / 2}, ${co2_height - 50})`);
+
+      const defs = legend.append("defs");
+      const linearGradient = defs.append("linearGradient").attr("id", "legend-gradient");
+      linearGradient.selectAll("stop")
+                    .data(d3.range(0, 1.05, 0.05))
+                    .enter().append("stop")
+                    .attr("offset", d => d)
+                    .attr("stop-color", d => colorScale(d * valueExtent[1]));
+
+      legend.append("rect")
+            .attr("width", legendWidth)
+            .attr("height", legendHeight)
+            .style("fill", "url(#legend-gradient)");
+
+      const legendScale = d3.scaleLinear()
+                            .domain(valueExtent)
+                            .range([0, legendWidth]);
+
+      const legendAxis = d3.axisBottom(legendScale).ticks(5).tickFormat(d3.format(".2s"));
+      legend.append("g")
+            .attr("transform", `translate(0, ${legendHeight})`)
+            .call(legendAxis)
+            .selectAll("text")
+            .attr("class", "legend-label");
 
       // Population Bar Chart
       const margin = { top: 50, right: 50, bottom: 100, left: 120 };
