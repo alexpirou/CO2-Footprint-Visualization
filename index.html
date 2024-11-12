@@ -86,7 +86,7 @@
 
       // Get top 10 countries by population for the specific year
       const populationYearKey = `${specificYear} Population`;
-      const topCountries = population_data.sort((a, b) => b[populationYearKey] - a[populationYearKey]).slice(0, 10);
+      const topCountries = population_data.sort((a, b) => b[populationYearKey] - a[populationYearKey]).slice(0, 5);
 
       // Create a set of the top 10 country names for faster lookup
       const topCountryNames = new Set(topCountries.map(d => normalizeCountryName(d['Country/Territory'])));
@@ -109,6 +109,7 @@
              .join("path")
              .attr("class", "country")
              .attr("d", path)
+             .attr("opacity", 0.65)
              .attr("fill", d => {
                const countryName = normalizeCountryName(d.properties.name);
                return topCountryNames.has(countryName) ? colorScalePopulation(countryName) : defaultCountryColor;
@@ -209,10 +210,25 @@
                              .range([0, chart_height])
                              .padding(0.5);
 
+      // Drawing axes + labels
       const leftAxis = d3.axisLeft(countryScale);
       const bottomAxis = d3.axisBottom(populationScale).tickFormat(d3.format(".2s"));
       chartArea.append("g").attr("class", "y axis").call(leftAxis);
       chartArea.append("g").attr("class", "x axis").attr("transform", `translate(0, ${chart_height})`).call(bottomAxis);
+
+      chartArea.append("text")
+               .attr("class", "y label")
+               .attr("text-anchor", "middle")
+               .attr("font-weight", "bold")
+               .attr("transform", `translate(${margin.left - 175}, ${margin.top - chart_height / 2 + 300}) rotate(-90)`)
+               .text("Countries");
+
+      chartArea.append("text")
+               .attr("class", "x label")
+               .attr("text-anchor", "middle")
+               .attr("font-weight", "bold")
+               .attr("transform", `translate(${margin.left + chart_width / 3}, ${margin.top + chart_height})`)
+               .text("Population");
 
       // Draw bars for population chart
       chartArea.selectAll('rect.bar')
