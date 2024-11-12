@@ -32,23 +32,24 @@
 </head>
 <body>
   <h1>Population & CO₂ Footprint Visualizer 1970-2010</h1>
-  <div id="tooltip" class="tooltip"></div>
-  <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
-  <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
-  
-  <!-- Slider to control the year -->
+
   <div class="slider-container">
     <label for="year-slider">Year: <span id="year-display">1970</span></label>
     <input type="range" id="year-slider" min="1970" max="2010" step="10" value="1970">
   </div>
 
+  <div id="tooltip" class="tooltip"></div>
+  <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
+  <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
+  
+  
   <script>
     let world, co2_emissions, population_data, country_coordinates;
-    let specificYear = 1970; // Change this to the desired year
+    let specificYear = 1970; 
 
 
     async function requestData() {
-      // Load data only once
+      // Load data 
       world = await d3.json("./countries-110m.json");
       co2_emissions = await d3.csv("./co2_emissions_kt_by_country.csv", d3.autoType);
       population_data = await d3.csv("./world_population.csv", d3.autoType);
@@ -59,16 +60,15 @@
       // Draw initial year
       drawMapAndChart(specificYear);
 
-      // Attach the slider event listener only after data has loaded
+      // slider
       d3.select("#year-slider").on("input", function() {
-        specificYear = +this.value; // Update the shared specificYear variable
+        specificYear = +this.value; 
         document.getElementById('year-display').textContent = specificYear;
-        drawMapAndChart(specificYear); // Call with updated year
+        drawMapAndChart(specificYear); 
       });
     }
 
     function drawMapAndChart(year) {
-
 
       // Clear previous drawings
       d3.select("#co2").selectAll("*").remove();
