@@ -102,13 +102,19 @@
              .attr("stroke", "black")
              .attr("stroke-width", 0.5)
              .on("mouseover", (event, d) => {
-               const countryName = normalizeCountryName(d.properties.name);
-               const co2Value = co2Data.get(countryName);
-               if (co2Value) {
-                 tooltip.style("display", "block")
-                        .html(`<strong>${countryName}</strong><br>CO₂ Emissions: ${co2Value.toLocaleString()} kt`);
-               }
-             })
+                const countryName = normalizeCountryName(d.properties.name);
+                const co2Value = co2Data.get(countryName);
+                const population = populationLookup[countryName];
+
+                if (co2Value && population) {
+                  tooltip.style("display", "block")
+                        .html(`
+                          <strong>${countryName}</strong><br>
+                          CO₂ Emissions: ${co2Value.toLocaleString()} kt<br>
+                          Population: ${population.toLocaleString()}
+                        `);
+                }
+              })
              .on("mousemove", event => {
                tooltip.style("top", (event.pageY + 15) + "px")
                       .style("left", (event.pageX + 15) + "px");
@@ -226,6 +232,16 @@
       chartArea.append("g").attr("class", "y axis").call(leftAxis);
       chartArea.append("g").attr("class", "x axis").attr("transform", `translate(0, ${chart_height})`).call(bottomAxis);
 
+      // Add title
+      chartArea.append("text")
+              .attr("transform", `translate(${margin.left + chart_width / 3}, ${0 - (margin.top / 2) - 10})`)
+                .attr("text-anchor", "middle")  
+                .style("font-size", "20px")
+                .style("font-weight", "bold")
+                .style("text-decoration", "underline")  
+                .text("Top 5 Population Countries");
+
+      // Add axes
       chartArea.append("text")
                .attr("class", "y label")
                .attr("text-anchor", "middle")
@@ -254,7 +270,7 @@
                .data(top5Countries)
                .join('text')
                .attr('class', 'population')
-               .attr("x", d => populationScale(d[populationYearKey]) - 70)
+               .attr("x", d => populationScale(d[populationYearKey]) - 100)
                .attr("y", d => countryScale(normalizeCountryName(d['Country/Territory'])) + countryScale.bandwidth() / 2 + 5)
                .attr("fill", "black")
                .attr("font-size", "12px")
