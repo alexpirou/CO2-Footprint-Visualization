@@ -8,16 +8,14 @@
   <script src="https://unpkg.com/topojson@3"></script>
   <style>
     body {
-      font-family:Arial, Helvetica, sans-serif;
+      font-family: Arial, Helvetica, sans-serif;
     }
     .gridlines line {
       stroke: #bbb;
     }
-
     .gridlines .domain {
       stroke: none;
     }
-
     .tooltip {
       position: absolute;
       padding: 8px;
@@ -42,25 +40,18 @@
   <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
   <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
   
-  
   <script>
     let world, co2_emissions, population_data, country_coordinates;
     let specificYear = 1970; 
 
-
     async function requestData() {
-      // Load data 
       world = await d3.json("./countries-110m.json");
       co2_emissions = await d3.csv("./co2_emissions_kt_by_country.csv", d3.autoType);
       population_data = await d3.csv("./world_population.csv", d3.autoType);
       country_coordinates = await d3.csv("./country-coordinates.csv", d3.autoType);
 
-      console.log("Data loaded:", { world, co2_emissions, population_data, country_coordinates });
-
-      // Draw initial year
       drawMapAndChart(specificYear);
 
-      // slider
       d3.select("#year-slider").on("input", function() {
         specificYear = +this.value; 
         document.getElementById('year-display').textContent = specificYear;
@@ -69,8 +60,6 @@
     }
 
     function drawMapAndChart(year) {
-
-      // Clear previous drawings
       d3.select("#co2").selectAll("*").remove();
       d3.select("#population-chart").selectAll("*").remove();
 
@@ -85,25 +74,17 @@
       const countries = topojson.feature(world, world.objects.countries).features;
       const co2DataForYear = co2_emissions.filter(d => d.year === year);
       const co2Data = new Map(co2DataForYear.map(d => [normalizeCountryName(d.country_name), d.value]));
-      // Tooltip for displaying CO2 information
       const tooltip = d3.select("#tooltip");
 
-      // Get top 10 countries by population for the specific year
       const populationYearKey = `${specificYear} Population`;
       const topCountries = population_data.sort((a, b) => b[populationYearKey] - a[populationYearKey]).slice(0, 5);
-
-      // Create a set of the top 10 country names for faster lookup
       const topCountryNames = new Set(topCountries.map(d => normalizeCountryName(d['Country/Territory'])));
 
-      // Assign colors to the top 10 countries and use grey for the rest
       const colorScalePopulation = d3.scaleOrdinal()
                                      .domain(topCountryNames)
                                      .range(d3.schemeTableau10); 
-
-      // Default grey color for other countries
       const defaultCountryColor = "#d3d3d3";
 
-      // Draw countries with population-based coloring
       const populationLookup = Object.fromEntries(
         population_data.map(d => [normalizeCountryName(d['Country/Territory']), d[populationYearKey]])
       );
@@ -136,7 +117,6 @@
                tooltip.style("display", "none");
              });
 
-      // Map country codes to coordinates for CO2 density contour
       const country_coordinates_map = new Map(country_coordinates.map(d => [normalizeCountryName(d.name), [d.longitude, d.latitude]]));
 
       const co2DataWithCoords = [];
@@ -153,9 +133,6 @@
         }
       });
 
-      console.log(co2DataWithCoords);
-
-      // Contour Generator (this should go below the country borders)
       const contourGen = d3.contourDensity()
                            .x(d => d.position[0])
                            .y(d => d.position[1])
@@ -165,11 +142,10 @@
 
       const contours = contourGen(co2DataWithCoords);
 
-      // Color scale for CO2 density contours
+      // Set up color scale specifically for contours using valueExtent
       const valueExtent = d3.extent(contours, d => d.value);
       const colorScale = d3.scaleSequential(d3.interpolateReds).domain(valueExtent);
 
-      // Draw contours (place behind country borders)
       const contourLayer = co2_map.append("g").lower();
       contourLayer.selectAll("path.contours")
                   .data(contours)
@@ -180,7 +156,6 @@
                   .attr("stroke", "none")
                   .attr("opacity", 1);
 
-      // Keep country borders above contours
       co2_map.selectAll("path.country-border")
              .data(countries)
              .join("path")
@@ -190,35 +165,40 @@
              .attr("stroke", "#333")
              .attr("stroke-width", 0.7);
 
-             const legendWidth = 300, legendHeight = 10;
+      // Define a separate color scale for the legend with a fixed range
+      const maxEmissionValue = d3.max(co2DataWithCoords, d => d.value);
+      const legendColorScale = d3.scaleSequential(d3.interpolateReds).domain([0, maxEmissionValue]);
+
+      const legendWidth = 300, legendHeight = 10;
       const legend = co2_svg.append("g")
-                            .attr("transform", `translate(${(co2_width - legendWidth) / 2}, ${co2_height - 50})`);
+        .attr("transform", `translate(${(co2_width - legendWidth) / 2}, ${co2_height - 50})`);
 
       const defs = legend.append("defs");
       const linearGradient = defs.append("linearGradient").attr("id", "legend-gradient");
+
       linearGradient.selectAll("stop")
-                    .data(d3.range(0, 1.05, 0.05))
-                    .enter().append("stop")
-                    .attr("offset", d => d)
-                    .attr("stop-color", d => colorScale(d * valueExtent[1]));
+        .data(d3.ticks(0, 1, 10))
+        .enter().append("stop")
+        .attr("offset", d => d)
+        .attr("stop-color", d => legendColorScale(d * maxEmissionValue));
 
       legend.append("rect")
-            .attr("width", legendWidth)
-            .attr("height", legendHeight)
-            .style("fill", "url(#legend-gradient)");
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("fill", "url(#legend-gradient)");
 
       const legendScale = d3.scaleLinear()
-                            .domain(valueExtent)
-                            .range([0, legendWidth]);
+        .domain([0, maxEmissionValue])
+        .range([0, legendWidth]);
 
-      const legendAxis = d3.axisBottom(legendScale).ticks(5).tickFormat(d3.format(".2s"));
+      const legendAxis = d3.axisBottom(legendScale)
+        .ticks(5)
+        .tickFormat(d => `${d3.format(".2s")(d)} kt`);
+
       legend.append("g")
-            .attr("transform", `translate(0, ${legendHeight})`)
-            .call(legendAxis)
-            .selectAll("text")
-            .attr("class", "legend-label");
+        .attr("transform", `translate(0, ${legendHeight})`)
+        .call(legendAxis);
 
-      // Population Bar Chart
       const margin = { top: 50, right: 50, bottom: 100, left: 120 };
       const chart_svg = d3.select("#population-chart");
       const chart_width = chart_svg.attr("width") - margin.left - margin.right;
@@ -226,7 +206,6 @@
       const chartArea = chart_svg.append("g")
                                  .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
-      // Update to use specific Year
       population_data.forEach(d => {
         d[populationYearKey] = Number(d[populationYearKey]);
       });
@@ -242,7 +221,6 @@
                              .range([0, chart_height])
                              .padding(0.5);
 
-      // Drawing axes + labels
       const leftAxis = d3.axisLeft(countryScale);
       const bottomAxis = d3.axisBottom(populationScale).tickFormat(d3.format(".2s"));
       chartArea.append("g").attr("class", "y axis").call(leftAxis);
@@ -262,7 +240,6 @@
                .attr("transform", `translate(${margin.left + chart_width / 3}, ${margin.top + chart_height})`)
                .text("Population");
 
-      // Draw bars for population chart
       chartArea.selectAll('rect.bar')
                .data(top5Countries)
                .join('rect')
@@ -273,7 +250,6 @@
                .attr("width", d => Math.min(populationScale(d[populationYearKey]), chart_width))
                .attr("height", countryScale.bandwidth());
 
-      // Add population text inside each bar
       chartArea.selectAll('text.population')
                .data(top5Countries)
                .join('text')
@@ -286,7 +262,6 @@
                .text(d => d3.format(",")(d[populationYearKey]));
     }
 
-    // Utility function to normalize country names
     function normalizeCountryName(name) {
       const countryNameMap = {
         'United States': 'USA',
@@ -294,7 +269,6 @@
         'Russia': 'Russian Federation',
         'Iran': 'Iran, Islamic Republic of',
         'Czech Republic': 'Czechia'
-        // Add more mappings here as needed
       };
       return countryNameMap[name] || name;
     }
