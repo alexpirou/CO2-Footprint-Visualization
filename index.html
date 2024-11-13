@@ -10,6 +10,10 @@
     body {
       font-family: Arial, Helvetica, sans-serif;
     }
+    #container {
+      display: flex;
+      flex-direction: row;
+    }
     .gridlines line {
       stroke: #bbb;
     }
@@ -37,8 +41,10 @@
   </div>
 
   <div id="tooltip" class="tooltip"></div>
-  <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
-  <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
+  <div id="container">
+    <svg id="co2" height="600" width="1000" style="background: #fff; margin-top: 50px"></svg>
+    <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
+  </div>
   
   <script>
     let world, co2_emissions, population_data, country_coordinates;
