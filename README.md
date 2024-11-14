@@ -1,5 +1,7 @@
 # Population & CO2 Footprint Visualizer 1970-2010
 
+[Visit site](https://alexpirou.github.io/CO2-Footprint-Visualization/)
+
 ![Map Visualization Hover Effect](/MapHover.png "CO2/Populations Map Visualization")
 ![Bar Chart Visualization](/PopChart.png "Populations Bar Chart")
 
