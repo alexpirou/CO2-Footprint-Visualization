@@ -82,8 +82,8 @@
 
   <div id="tooltip" class="tooltip"></div>
   <div id="container">
-    <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
-    <svg id="population-chart" height="500" width="1000" style="background: #fff;"></svg>
+    <svg id="co2" height="800" width="1200" style="background: #fff;"></svg>
+    <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 25px;"></svg>
   </div>
   
   <script>
@@ -292,7 +292,7 @@
                .attr("class", "y label")
                .attr("text-anchor", "middle")
                .attr("font-weight", "bold")
-               .attr("transform", `translate(${margin.left - 175}, ${margin.top - chart_height / 2 + 200}) rotate(-90)`)
+               .attr("transform", `translate(${margin.left - 175}, ${margin.top - chart_height / 2 + 300}) rotate(-90)`)
                .text("Countries");
 
       chartArea.append("text")
