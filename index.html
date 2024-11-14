@@ -9,17 +9,28 @@
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    #container {
-      display: flex;
-      flex-direction: row;
+
+    h1 {
+      text-align: center;
+      margin-top: 20px;
     }
+
+    .slider-container {
+      text-align: center;
+    }
+
     .gridlines line {
       stroke: #bbb;
     }
+
     .gridlines .domain {
       stroke: none;
     }
+
     .tooltip {
       position: absolute;
       padding: 8px;
@@ -29,6 +40,35 @@
       pointer-events: none;
       font-size: 12px;
       display: none;
+    }
+
+    #container {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+      align-items: column;
+      justify-content: space-between;
+      padding: 10px;
+    }
+
+    #year-slider {
+      width: 50%;
+    }
+
+    .legend {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .legend rect {
+      width: 300px;
+      height: 10px;
+    }
+
+    .legend text {
+      font-size: 12px;
+      fill: #333;
     }
   </style>
 </head>
@@ -42,8 +82,8 @@
 
   <div id="tooltip" class="tooltip"></div>
   <div id="container">
-    <svg id="co2" height="600" width="1000" style="background: #fff; margin-top: 50px"></svg>
-    <svg id="population-chart" height="500" width="1000" style="background: #fff; margin-top: 50px"></svg>
+    <svg id="co2" height="800" width="1200" style="background: #fff; margin-top: 50px"></svg>
+    <svg id="population-chart" height="500" width="1000" style="background: #fff;"></svg>
   </div>
   
   <script>
@@ -252,7 +292,7 @@
                .attr("class", "y label")
                .attr("text-anchor", "middle")
                .attr("font-weight", "bold")
-               .attr("transform", `translate(${margin.left - 175}, ${margin.top - chart_height / 2 + 300}) rotate(-90)`)
+               .attr("transform", `translate(${margin.left - 175}, ${margin.top - chart_height / 2 + 200}) rotate(-90)`)
                .text("Countries");
 
       chartArea.append("text")
