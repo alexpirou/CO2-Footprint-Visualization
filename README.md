@@ -1,8 +1,7 @@
 # Population & CO2 Footprint Visualizer 1970-2010
 
-![Map Visualization](/PopMap.png "CO2/Populations Map Visualization and Slider")
+![Map Visualization Hover Effect](/MapHover.png "CO2/Populations Map Visualization")
 ![Bar Chart Visualization](/PopChart.png "Populations Bar Chart")
-![Map Visualization Hover Effect](/MapHover.png "CO2/Populations Map Visualization Hover Effect")
 
 ## Contributors
 
